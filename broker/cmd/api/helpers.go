@@ -31,14 +31,14 @@ func (app *Config) readJson(w http.ResponseWriter, r *http.Request, data any) er
 	return nil
 }
 
-func (app *Config) writeJson(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
+func (app *Config) writeJson(w http.ResponseWriter, status int, data any, headers *http.Header) error {
 	out, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	if len(headers) > 0 {
-		for key, value := range headers[0] {
+	if headers != nil {
+		for key, value := range *headers {
 			w.Header()[key] = value
 		}
 	}
@@ -51,4 +51,18 @@ func (app *Config) writeJson(w http.ResponseWriter, status int, data any, header
 	}
 
 	return nil
+}
+
+func (app *Config) errorJson(w http.ResponseWriter, err error, status *int) error {
+	statusCode := http.StatusBadRequest
+
+	if status != nil {
+		statusCode = *status
+	}
+
+	var payload jsonResponse
+	payload.Error = true
+	payload.Message = err.Error()
+
+	return app.writeJson(w, statusCode, payload, nil)
 }
