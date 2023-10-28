@@ -8,7 +8,7 @@ docker-up:
 	@echo "Docker images started!"
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-docker-build-up: build_broker
+docker-build-up: build-broker
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -34,7 +34,7 @@ build-frontend:
 	@echo "Done!"
 
 ## start: starts the front end
-start-frontend: build_front
+start-frontend: build-front
 	@echo "Starting front end"
 	cd front-end && ./${FRONT_END_BINARY} &
 
