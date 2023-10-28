@@ -1,6 +1,11 @@
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+	"log"
+
+	"github.com/DpodDani/auth/cmd/data"
+)
 
 const webPort = "80"
 
@@ -10,5 +15,5 @@ type Config struct {
 }
 
 func main() {
-
+	log.Println("Starting auth service...")
 }
