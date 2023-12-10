@@ -53,13 +53,7 @@ func WriteJson(w http.ResponseWriter, status int, data any, headers *http.Header
 	return nil
 }
 
-func ErrorJson(w http.ResponseWriter, err error, status *int) error {
-	statusCode := http.StatusBadRequest
-
-	if status != nil {
-		statusCode = *status
-	}
-
+func ErrorJson(w http.ResponseWriter, err error, statusCode int) error {
 	var payload JsonResponse
 	payload.Error = true
 	payload.Message = err.Error()

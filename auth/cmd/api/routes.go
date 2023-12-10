@@ -21,6 +21,7 @@ func (app *Config) routes() http.Handler {
 	}))
 
 	r.Use(middleware.Heartbeat("/ping"))
+	r.Post("/authenticate", app.Authenticate)
 
 	return r
 }
