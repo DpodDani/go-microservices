@@ -1,6 +1,7 @@
 version: '3'
 
 services:
+
   broker-service:
     build:
       context: ./broker
@@ -11,3 +12,34 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+
+  auth-service:
+    build:
+      context: ./auth
+      dockerfile: auth.dockerfile
+    restart: always
+    ports:
+      - "8081:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      # TODO: Parameterise the credentials, so they can used here and in the postgres service definition below
+      # The value of "host" refers to the postgres service name defined below
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+
+  postgres:
+    image: "postgres:14.0"
+    ports:
+      - "5432:5432"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users
+    volumes:
+      # mapping ./db-data/postgres (on local computer) to /var/lib/postgresql/data (in Docker container)
+      - ./db-data/postgres/:/var/lib/postgresql/data/
