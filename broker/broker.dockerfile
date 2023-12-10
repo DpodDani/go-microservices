@@ -1,9 +1,11 @@
 # base golang image
 FROM golang:1.20-alpine as builder
 
-RUN mkdir /app
+RUN mkdir /app /toolbox
 
-COPY . /app
+COPY ../toolbox /toolbox
+
+COPY ./broker /app
 
 WORKDIR /app
 

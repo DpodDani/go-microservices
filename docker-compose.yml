@@ -4,8 +4,9 @@ services:
 
   broker-service:
     build:
-      context: ./broker
-      dockerfile: broker.dockerfile
+      # setting context to project root, to have access to toolbox module in broker Docker file
+      context: .
+      dockerfile: ./broker/broker.dockerfile
     restart: always
     ports:
       - "8080:80"
