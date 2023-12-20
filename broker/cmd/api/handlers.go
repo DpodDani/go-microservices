@@ -39,13 +39,11 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 
 	switch requestPayload.Action {
 	case "authenticate":
-		// TODO: Implement this
+		app.authenticate(w, requestPayload.Auth)
 	default:
 		toolbox.ErrorJson(
 			w,
-			errors.New(
-				fmt.Sprintf("unrecognised action: %s", requestPayload.Action),
-			),
+			fmt.Errorf("unrecognised action: %s", requestPayload.Action),
 			http.StatusBadRequest,
 		)
 	}
@@ -74,5 +72,24 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 		toolbox.ErrorJson(w, errors.New("error calling auth service"), http.StatusBadRequest)
 		return
 	}
+
+	var authResponse toolbox.JsonResponse
+	err = json.NewDecoder(response.Body).Decode(&authResponse)
+	if err != nil {
+		toolbox.ErrorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if authResponse.Error {
+		toolbox.ErrorJson(w, err, http.StatusUnauthorized)
+		return
+	}
+
+	payload := toolbox.JsonResponse{
+		Error:   false,
+		Message: "Authenticated! 🎉",
+		Data:    authResponse.Data,
+	}
+	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
 
 }
