@@ -97,5 +97,12 @@ func TestAuthenticate_password_matches(t *testing.T) {
 			"password": user.Password,
 		}).
 		Expect().
-		Status(http.StatusAccepted)
+		Status(http.StatusAccepted).
+		JSON().
+		Object().
+		IsEqual(map[string]interface{}{
+			"error":   false,
+			"message": fmt.Sprintf("Logged in user %s! 🎉", user.Email),
+			"data":    user,
+		})
 }
