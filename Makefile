@@ -2,6 +2,8 @@ FRONT_END_BINARY=frontApp
 BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 
+# TODO: Run SQL scripts in Postgres docker container to init DB!
+
 ## up: starts all containers in the background without forcing build
 docker-up:
 	@echo "Starting Docker images..."
