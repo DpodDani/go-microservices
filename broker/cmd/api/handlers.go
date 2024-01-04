@@ -17,7 +17,7 @@ type AuthPayload struct {
 
 type RequestPayload struct {
 	Action string      `json:"action"`
-	Auth   AuthPayload `json:"auto,omitempty"`
+	Auth   AuthPayload `json:"auth,omitempty"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 		return
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusAccepted {
 		toolbox.ErrorJson(w, errors.New("error calling auth service"), http.StatusBadRequest)
 		return
 	}
