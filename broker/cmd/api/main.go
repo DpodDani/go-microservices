@@ -13,7 +13,7 @@ type Config struct{}
 func main() {
 	app := Config{}
 
-	fmt.Printf("Starting broker service on port: %s\n", webPort)
+	log.Printf("Starting broker service on port: %s\n", webPort)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", webPort),

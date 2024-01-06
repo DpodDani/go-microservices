@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -30,6 +29,7 @@ func main() {
 
 	// create context in order to disconnect
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 }
 
 func connectToMongo() (*mongo.Client, error) {
@@ -41,7 +41,7 @@ func connectToMongo() (*mongo.Client, error) {
 
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		fmt.Printf("🛑 - Couldn't connect to MongoDB using: %s\n", mongoUrl)
+		log.Printf("🛑 - Couldn't connect to MongoDB using: %s\n", mongoUrl)
 		return nil, err
 	}
 

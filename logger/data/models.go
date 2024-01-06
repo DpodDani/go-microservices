@@ -2,10 +2,12 @@ package data
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var client *mongo.Client
@@ -41,8 +43,39 @@ func (l *LogEntry) Insert(entry LogEntry) error {
 		UpdatedAt: time.Now(),
 	})
 	if err != nil {
-		fmt.Printf("❗ - Failed to write log to MongoDB!")
+		log.Printf("❗ - Failed to write log to MongoDB!")
 	}
 
 	return err
+}
+
+func (l *LogEntry) All() ([]*LogEntry, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	collection := client.Database("logs").Collection("logs")
+
+	opts := options.Find()
+	opts.SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	cur, err := collection.Find(context.Background(), bson.D{}, opts)
+	if err != nil {
+		log.Println("❗ - Failed to fetch all log entries")
+		return nil, err
+	}
+
+	var logs []*LogEntry
+	for cur.Next(ctx) {
+		var item LogEntry
+
+		err := cur.Decode(&item)
+		if err != nil {
+			log.Printf("Error decoding log entry: %s\n", err)
+			return nil, err
+		}
+
+		logs = append(logs, &item)
+	}
+
+	return logs, nil
 }

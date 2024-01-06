@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
@@ -16,7 +17,7 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	err := toolbox.ReadJson(w, r, &requestPayload)
 	if err != nil {
-		fmt.Printf("❌ - Couldn't parse request")
+		log.Printf("❌ - Couldn't parse request")
 		toolbox.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
@@ -24,14 +25,14 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 	// validate user against database
 	user, err := app.Models.User.GetByEmail(requestPayload.Email)
 	if err != nil || user == nil {
-		fmt.Printf("❌ - Could not find email: %s\n", requestPayload.Email)
+		log.Printf("❌ - Could not find email: %s\n", requestPayload.Email)
 		toolbox.ErrorJson(w, errors.New("invalid credentials"), http.StatusBadRequest)
 		return
 	}
 
 	matches, err := user.PasswordMatches(requestPayload.Password)
 	if err != nil || !matches {
-		fmt.Printf("❌ - Invalid password for email: %s\n", requestPayload.Email)
+		log.Printf("❌ - Invalid password for email: %s\n", requestPayload.Email)
 		toolbox.ErrorJson(w, errors.New("invalid credentials"), http.StatusUnauthorized)
 		return
 	}

@@ -2,4 +2,5 @@
 ~*
 auth/authApp
 broker/brokerApp
+front-end/frontApp
 db-data/
