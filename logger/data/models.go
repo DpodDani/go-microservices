@@ -21,6 +21,16 @@ func New(mongo *mongo.Client) Models {
 	}
 }
 
+func getObjectID(id string) (*primitive.ObjectID, error) {
+	docID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Printf("Couldn't create ObjectID for id: %s\n", id)
+		return nil, err
+	}
+
+	return &docID, nil
+}
+
 type Models struct {
 	LogEntry LogEntry
 }
@@ -86,9 +96,8 @@ func (l *LogEntry) GetOne(id string) (*LogEntry, error) {
 	defer cancel()
 
 	collection := client.Database("logs").Collection("logs")
-	docID, err := primitive.ObjectIDFromHex(id)
+	docID, err := getObjectID(id)
 	if err != nil {
-		log.Printf("Couldn't create ObjectID for id: %s\n", id)
 		return nil, err
 	}
 
@@ -114,4 +123,35 @@ func (l *LogEntry) DropCollection() error {
 	}
 
 	return nil
+}
+
+func (l *LogEntry) Update() (*mongo.UpdateResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	collection := client.Database("logs").Collection("logs")
+
+	docID, err := getObjectID(l.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := collection.UpdateOne(
+		ctx,
+		bson.M{"_id": docID},
+		bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "Name", Value: l.Name},
+				{Key: "Data", Value: l.Data},
+				{Key: "updated_at", Value: time.Now()},
+			}},
+		},
+	)
+
+	if err != nil {
+		log.Printf("Failed to update for ID: %s\n", l.ID)
+		return nil, err
+	}
+
+	return res, err
 }
