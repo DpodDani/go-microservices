@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
@@ -15,9 +16,34 @@ type AuthPayload struct {
 	Password string `json:"password"`
 }
 
+type LogPayload struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
+}
+
 type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
+	Log    LogPayload  `json:"log,omitempty"`
+}
+
+func send_request(method string, url string, data []byte) (*http.Response, error) {
+	request, err := http.NewRequest(method, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data) > 0 {
+		request.Header.Set("Content-Type", "application/json")
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +66,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	switch requestPayload.Action {
 	case "authenticate":
 		app.authenticate(w, requestPayload.Auth)
+	case "log":
+		app.log(w, requestPayload.Log)
 	default:
 		toolbox.ErrorJson(
 			w,
@@ -54,12 +82,14 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	request, err := http.NewRequest(http.MethodPost, "http://auth-service/authenticate", bytes.NewBuffer(jsonData))
 	if err != nil {
 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
 	}
 
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
 	}
 	defer response.Body.Close()
 
@@ -92,4 +122,27 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	}
 	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
 
+}
+
+func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
+	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+	response, err := send_request(http.MethodPost, "http://logger-service/log", jsonData)
+	if err != nil {
+		log.Println("Failed to send request to logger service")
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if response.StatusCode != http.StatusAccepted {
+		msg := "Log service failed to process log entry"
+		log.Println(msg)
+		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
+		return
+	}
+
+	var jsonResponse toolbox.JsonResponse
+	jsonResponse.Error = false
+	jsonResponse.Message = "Successfully processed log entry!"
+
+	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
 }
