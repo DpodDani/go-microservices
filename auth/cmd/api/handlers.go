@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -8,6 +10,31 @@ import (
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
 )
+
+func logRequest(name, data string) error {
+	var entry struct {
+		Name string `json:"name"`
+		Data string `json:"data"`
+	}
+
+	entry.Name = name
+	entry.Data = data
+
+	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+
+	request, err := http.NewRequest(http.MethodPost, "http://logger-service/log", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+
+	client := http.Client{}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 	var requestPayload struct {
@@ -35,6 +62,14 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ - Invalid password for email: %s\n", requestPayload.Email)
 		toolbox.ErrorJson(w, errors.New("invalid credentials"), http.StatusUnauthorized)
 		return
+	}
+
+	// log authentication
+	// note: for some reason, in the tutorial we return from this function if
+	// logRequest() call returns an error... Decided not worth doing that
+	err = logRequest("auth", fmt.Sprintf("%s logged in", requestPayload.Email))
+	if err != nil {
+		log.Printf("😔 - Failed to log auth for email: %s: %s", requestPayload.Email, err)
 	}
 
 	response := toolbox.JsonResponse{
