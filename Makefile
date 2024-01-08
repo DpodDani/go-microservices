@@ -1,5 +1,6 @@
 FRONT_END_BINARY=frontApp
 BROKER_BINARY=brokerApp
+LOGGER_BINARY=loggerApp
 AUTH_BINARY=authApp
 
 # TODO: Run SQL scripts in Postgres docker container to init DB!
@@ -11,7 +12,7 @@ docker-up:
 	@echo "Docker images started!"
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-docker-build-up: build-broker build-auth
+docker-build-up: build-broker build-auth build-logger
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Building (when required) and starting docker images..."
@@ -34,6 +35,12 @@ build-broker:
 build-auth:
 	@echo "Building auth binary..."
 	cd auth && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd/api
+	@echo "Done!"
+
+## build_logger: builds the logger binary as a linux executable
+build-logger:
+	@echo "Building logger binary..."
+	cd logger && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd/api
 	@echo "Done!"
 
 ## build_front: builds the frone end binary

@@ -1,6 +1,4 @@
 .DS_Store
 ~*
-auth/authApp
-broker/brokerApp
-front-end/frontApp
+**/*App
 db-data/
