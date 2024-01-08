@@ -31,6 +31,7 @@ func (app *Config) serve() {
 		Handler: app.routes(),
 	}
 
+	log.Printf("Logging service running on %s\n", srv.Addr)
 	err := srv.ListenAndServe()
 	if err != nil {
 		log.Panic(err)
@@ -58,7 +59,7 @@ func main() {
 		Models: data.New(mongoClient),
 	}
 
-	go app.serve()
+	app.serve()
 }
 
 func connectToMongo() (*mongo.Client, error) {
