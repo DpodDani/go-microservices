@@ -44,3 +44,14 @@ services:
     volumes:
       # mapping ./db-data/postgres (on local computer) to /var/lib/postgresql/data (in Docker container)
       - ./db-data/postgres/:/var/lib/postgresql/data/
+
+  mongo:
+    image: "mongo:4.2.16-bionic"
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: logs
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./db-data/mongo/:/data/db/
