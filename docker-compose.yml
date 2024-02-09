@@ -38,6 +38,24 @@ services:
       # The value of "host" refers to the postgres service name defined below
       DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
 
+  mail-service:
+    build:
+      context: ./mail
+      dockerfile: mail.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      MAIL_PORT: 1025
+      MAIL_DOMAIN: localhost
+      MAIL_HOST: mailhog
+      MAIL_USENAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_ENCRYPTION: none
+      MAIL_FROM_NAME: "John Smith"
+      MAIL_FROM_ADDRESS: "john.smith@example.com"
+
   postgres:
     image: "postgres:14.0"
     ports:
