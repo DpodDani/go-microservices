@@ -21,10 +21,18 @@ type LogPayload struct {
 	Data string `json:"data"`
 }
 
+type MailPayload struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
+}
+
 type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
 	Log    LogPayload  `json:"log,omitempty"`
+	Mail   MailPayload `json:"mail,omitempty"`
 }
 
 func send_request(method string, url string, data []byte) (*http.Response, error) {
@@ -68,6 +76,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
 		app.log(w, requestPayload.Log)
+	case "mail":
+		app.sendMail(w, requestPayload.Mail)
 	default:
 		toolbox.ErrorJson(
 			w,
@@ -134,7 +144,7 @@ func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
 	}
 
 	if response.StatusCode != http.StatusAccepted {
-		msg := "Log service failed to process log entry"
+		msg := "log service failed to process log entry"
 		log.Println(msg)
 		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
 		return
@@ -143,6 +153,29 @@ func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
 	var jsonResponse toolbox.JsonResponse
 	jsonResponse.Error = false
 	jsonResponse.Message = "Successfully processed log entry!"
+
+	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
+}
+
+func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
+	jsonData, _ := json.MarshalIndent(mail, "", "\t")
+	response, err := send_request(http.MethodPost, "http://mail-service/send", jsonData)
+	if err != nil {
+		log.Println("Failed to send request to mail service")
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if response.StatusCode != http.StatusAccepted {
+		msg := "mail service failed to process mail entry"
+		log.Println(msg)
+		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
+		return
+	}
+
+	var jsonResponse toolbox.JsonResponse
+	jsonResponse.Error = false
+	jsonResponse.Message = "Successfully sent mail!"
 
 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
 }
