@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
@@ -18,7 +19,9 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 
 	err := toolbox.ReadJson(w, r, &requestPayload)
 	if err != nil {
+		log.Println("Failed to parse request payload")
 		toolbox.ErrorJson(w, err, http.StatusBadRequest)
+		return
 	}
 
 	msg := Message{
@@ -30,7 +33,9 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 
 	err = app.Mailer.SendSMTPMessage(msg)
 	if err != nil {
+		log.Println("Failed to send mail")
 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
 	}
 
 	payload := toolbox.JsonResponse{
