@@ -4,6 +4,7 @@ use (
 	./auth
 	./broker
 	./front-end
+	./listener
 	./logger
 	./mail
 	./toolbox
