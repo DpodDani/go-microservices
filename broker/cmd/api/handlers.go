@@ -175,7 +175,7 @@ func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 
 	var jsonResponse toolbox.JsonResponse
 	jsonResponse.Error = false
-	jsonResponse.Message = "Successfully sent mail!"
+	jsonResponse.Message = fmt.Sprintf("Successfully sent mail to: %s!", mail.To)
 
 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
 }
