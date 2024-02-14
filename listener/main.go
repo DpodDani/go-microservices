@@ -27,7 +27,7 @@ func connect() (*amqp.Connection, error) {
 	baseDelay := 1 * time.Second
 	retries := 0
 	maxRetries := 5
-	rmqDsn := "amqp://guest:guest@localhost"
+	rmqDsn := "amqp://guest:guest@localhost" // TODO: Change host to "rabbitmq" once this is running in Docker
 
 	for {
 		conn, err := amqp.Dial(rmqDsn)
