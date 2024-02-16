@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/DpodDani/listener/event"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -16,8 +17,18 @@ func main() {
 	}
 	defer conn.Close()
 	// start listening to messages
+	log.Println("Listening for and consuming RabbitMQ messages")
 	// create consumer
+	consumer, err := event.NewConsumer(conn)
+	if err != nil {
+		log.Panic("Failed to create a consumer")
+	}
 	// watch queue and consume events (from a topic)
+	var topics []string = []string{"log.INFO", "log.WARNING", "log.ERROR"}
+	err = consumer.Listen(topics)
+	if err != nil {
+		log.Panicf("Failed to listen to topics: %v\n", topics)
+	}
 }
 
 func connect() (*amqp.Connection, error) {
