@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 	"time"
 
 	"github.com/DpodDani/logger/data"
@@ -25,17 +27,22 @@ type Config struct {
 	Models data.Models
 }
 
-func (app *Config) serve() {
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%s", webPort),
-		Handler: app.routes(),
+func (app *Config) rpcListen() error {
+	log.Println("Starting RPC server on port", rpcPort)
+	listen, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", rpcPort))
+	if err != nil {
+		return err
+	}
+	defer listen.Close()
+
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
 	}
 
-	log.Printf("Logging service running on %s\n", srv.Addr)
-	err := srv.ListenAndServe()
-	if err != nil {
-		log.Panic(err)
-	}
 }
 
 func main() {
@@ -59,7 +66,23 @@ func main() {
 		Models: data.New(mongoClient),
 	}
 
-	app.serve()
+	err = rpc.Register(new(RPCServer))
+	if err != nil {
+		log.Panic(err)
+	}
+	go app.rpcListen()
+
+	// start web server
+	log.Println("Starting service on port:", webPort)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", webPort),
+		Handler: app.routes(),
+	}
+
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func connectToMongo() (*mongo.Client, error) {
