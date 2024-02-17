@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
+	"github.com/DpodDani/go-microservices-toolbox/rmq"
 )
 
 type AuthPayload struct {
@@ -75,7 +76,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "authenticate":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
-		app.log(w, requestPayload.Log)
+		app.emitEvent(w, requestPayload.Log)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
 	default:
@@ -134,28 +135,28 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 
 }
 
-func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
-	jsonData, _ := json.MarshalIndent(entry, "", "\t")
-	response, err := send_request(http.MethodPost, "http://logger-service/log", jsonData)
-	if err != nil {
-		log.Println("Failed to send request to logger service")
-		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
-		return
-	}
+// func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
+// 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+// 	response, err := send_request(http.MethodPost, "http://logger-service/log", jsonData)
+// 	if err != nil {
+// 		log.Println("Failed to send request to logger service")
+// 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+// 		return
+// 	}
 
-	if response.StatusCode != http.StatusAccepted {
-		msg := "log service failed to process log entry"
-		log.Println(msg)
-		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
-		return
-	}
+// 	if response.StatusCode != http.StatusAccepted {
+// 		msg := "log service failed to process log entry"
+// 		log.Println(msg)
+// 		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
+// 		return
+// 	}
 
-	var jsonResponse toolbox.JsonResponse
-	jsonResponse.Error = false
-	jsonResponse.Message = "Successfully processed log entry!"
+// 	var jsonResponse toolbox.JsonResponse
+// 	jsonResponse.Error = false
+// 	jsonResponse.Message = "Successfully processed log entry!"
 
-	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
-}
+// 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
+// }
 
 func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 	jsonData, _ := json.MarshalIndent(mail, "", "\t")
@@ -178,4 +179,39 @@ func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 	jsonResponse.Message = fmt.Sprintf("Successfully sent mail to: %s!", mail.To)
 
 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
+}
+
+func (app *Config) emitEvent(w http.ResponseWriter, l LogPayload) {
+	err := app.pushToQueue(l.Name, l.Data)
+	if err != nil {
+		log.Printf("Failed to push message [name,data]: [%s,%s]", l.Name, l.Data)
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	var payload toolbox.JsonResponse
+	payload.Error = false
+	payload.Message = "Emitted message to RMQ"
+
+	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
+}
+
+func (app *Config) pushToQueue(name, msg string) error {
+	emitter, err := rmq.NewEmitter(app.rmqConn)
+	if err != nil {
+		return err
+	}
+
+	payload := LogPayload{
+		Name: name,
+		Data: msg,
+	}
+
+	jsonData, _ := json.MarshalIndent(payload, "", "\t")
+	err = emitter.Push(string(jsonData), "log.INFO")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
