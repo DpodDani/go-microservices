@@ -4,14 +4,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	rmq "github.com/DpodDani/go-microservices-toolbox/rmq"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const webPort = "80"
 
-type Config struct{}
+type Config struct {
+	rmqConn *amqp.Connection
+}
 
 func main() {
-	app := Config{}
+	conn, err := rmq.Connect()
+	if err != nil {
+		log.Panic("Failed to connect to RabbitMQ ❌")
+	}
+	defer conn.Close()
+
+	app := Config{
+		rmqConn: conn,
+	}
 
 	log.Printf("Starting broker service on port: %s\n", webPort)
 
@@ -20,7 +33,7 @@ func main() {
 		Handler: app.routes(),
 	}
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Panic(err)
 	}
