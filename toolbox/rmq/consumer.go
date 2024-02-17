@@ -120,6 +120,7 @@ func (c *Consumer) Listen(topics []string) error {
 		for msg := range messages {
 			var payload Payload
 			_ = json.Unmarshal(msg.Body, &payload)
+			log.Printf("Consuming message: %+v\n", payload)
 			go handlePayload(payload)
 		}
 	}()
