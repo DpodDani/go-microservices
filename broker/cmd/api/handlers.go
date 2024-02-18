@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/rpc"
 
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
-	"github.com/DpodDani/go-microservices-toolbox/rmq"
 )
 
 type AuthPayload struct {
@@ -76,7 +76,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "authenticate":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
-		app.emitEvent(w, requestPayload.Log)
+		app.sendRpcMessage(w, requestPayload.Log)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
 	default:
@@ -181,37 +181,65 @@ func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
 }
 
-func (app *Config) emitEvent(w http.ResponseWriter, l LogPayload) {
-	err := app.pushToQueue(l.Name, l.Data)
+// func (app *Config) emitEvent(w http.ResponseWriter, l LogPayload) {
+// 	err := app.pushToQueue(l.Name, l.Data)
+// 	if err != nil {
+// 		log.Printf("Failed to push message [name,data]: [%s,%s]", l.Name, l.Data)
+// 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	var payload toolbox.JsonResponse
+// 	payload.Error = false
+// 	payload.Message = "Emitted message to RMQ"
+
+// 	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
+// }
+
+// func (app *Config) pushToQueue(name, msg string) error {
+// 	emitter, err := rmq.NewEmitter(app.rmqConn)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	payload := LogPayload{
+// 		Name: name,
+// 		Data: msg,
+// 	}
+
+// 	jsonData, _ := json.MarshalIndent(payload, "", "\t")
+// 	err = emitter.Push(string(jsonData), "log.INFO")
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func (app *Config) sendRpcMessage(w http.ResponseWriter, l LogPayload) {
+	client, err := rpc.Dial("tcp", "logger-service:5001")
 	if err != nil {
-		log.Printf("Failed to push message [name,data]: [%s,%s]", l.Name, l.Data)
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	rpcPayload := RPCPayload(l)
+
+	var result string
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	var payload toolbox.JsonResponse
 	payload.Error = false
-	payload.Message = "Emitted message to RMQ"
+	payload.Message = result
 
 	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
-}
-
-func (app *Config) pushToQueue(name, msg string) error {
-	emitter, err := rmq.NewEmitter(app.rmqConn)
-	if err != nil {
-		return err
-	}
-
-	payload := LogPayload{
-		Name: name,
-		Data: msg,
-	}
-
-	jsonData, _ := json.MarshalIndent(payload, "", "\t")
-	err = emitter.Push(string(jsonData), "log.INFO")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

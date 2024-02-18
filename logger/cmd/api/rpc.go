@@ -28,6 +28,6 @@ func (r *RPCServer) LogInfo(payload RPCPayload, resp *string) error {
 		return err
 	}
 
-	*resp = "Processed payload via RPC:" + payload.Data
+	*resp = "Processed payload via RPC: " + payload.Data
 	return nil
 }
