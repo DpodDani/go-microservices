@@ -2,3 +2,4 @@
 ~*
 **/*App
 db-data/
+*.pb.go

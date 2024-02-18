@@ -54,3 +54,11 @@ make docker-build-up
 make docker-up # run containers for all services
 make docker-down # stop containers for all services (without deleting images)
 ```
+
+### Compile proto files
+
+1. Navigate to directory containing `proto` files, then run:
+
+```shell
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative <PROTO_FILE>
+```
