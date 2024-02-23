@@ -62,3 +62,5 @@ make docker-down # stop containers for all services (without deleting images)
 ```shell
 protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative <PROTO_FILE>
 ```
+
+> Alternatively, run `make compile-proto-files` in project root
