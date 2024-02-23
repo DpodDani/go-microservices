@@ -10,7 +10,7 @@ require (
 
 )
 
-require github.com/rabbitmq/amqp091-go v1.9.0 // indirect
+require github.com/rabbitmq/amqp091-go v1.9.0
 
 // generated this by running go get github.com/DpodDani/go-microservices-toolbox
 // Note: must have added the "replace" statement from above first!
