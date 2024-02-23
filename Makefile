@@ -73,3 +73,15 @@ stop-frontend:
 	@echo "Stopping front end..."
 	@-pkill -SIGTERM -f "./${FRONT_END_BINARY}"
 	@echo "Stopped front end!"
+
+
+## Compile proto files
+
+services := logger broker
+compile_cmd := protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+
+compile-proto-files:
+	@echo "Compiling proto files for services: $(services)"
+	# For each "svc" in services, run the protoc compile command
+	$(foreach svc,$(services),$$(cd $(svc)/proto && $$($(compile_cmd))))
+	@echo "Finished compiling proto files"
