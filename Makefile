@@ -13,8 +13,17 @@ docker-up:
 	docker-compose up -d
 	@echo "Docker images started!"
 
-## up_build: stops docker-compose (if running), builds all projects and starts docker compose
+## build_up: stops docker-compose (if running), builds all projects and starts docker compose
 docker-build-up: build-broker build-auth build-logger build-mail build-listener
+	@echo "Stopping docker images (if running...)"
+	docker-compose down
+	@echo "Building (when required) and starting docker images..."
+	docker-compose up --build -d
+	@echo "Docker images built and started!"
+
+## rebuild: stops docker-compose (if running) and removes all images,
+## builds all projects and starts docker compose
+docker-rebuild: build-broker build-auth build-logger build-mail build-listener
 	@echo "Stopping docker images (if running...)"
 	docker-compose down --rmi all
 	@echo "Building (when required) and starting docker images..."
