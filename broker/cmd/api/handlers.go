@@ -2,14 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/rpc"
+	"time"
 
+	logs "github.com/DpodDani/broker/proto"
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type AuthPayload struct {
@@ -88,6 +93,44 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
+	var requestPayload RequestPayload
+
+	err := toolbox.ReadJson(w, r, &requestPayload)
+	if err != nil {
+		toolbox.ErrorJson(w, err, http.StatusBadRequest)
+		return
+	}
+
+	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	client := logs.NewLogServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = client.WriteLog(ctx, &logs.LogRequest{
+		LogEntry: &logs.Log{
+			Name: requestPayload.Log.Name,
+			Data: requestPayload.Log.Data,
+		},
+	})
+	if err != nil {
+		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	var payload toolbox.JsonResponse
+	payload.Error = false
+	payload.Message = "Logged via gRPC!"
+
+	toolbox.WriteJson(w, http.StatusAccepted, &payload, nil)
+}
+
 func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	jsonData, _ := json.MarshalIndent(a, "", "\t")
 	request, err := http.NewRequest(http.MethodPost, "http://auth-service/authenticate", bytes.NewBuffer(jsonData))
@@ -135,29 +178,6 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 
 }
 
-// func (app *Config) log(w http.ResponseWriter, entry LogPayload) {
-// 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
-// 	response, err := send_request(http.MethodPost, "http://logger-service/log", jsonData)
-// 	if err != nil {
-// 		log.Println("Failed to send request to logger service")
-// 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	if response.StatusCode != http.StatusAccepted {
-// 		msg := "log service failed to process log entry"
-// 		log.Println(msg)
-// 		toolbox.ErrorJson(w, errors.New(msg), http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	var jsonResponse toolbox.JsonResponse
-// 	jsonResponse.Error = false
-// 	jsonResponse.Message = "Successfully processed log entry!"
-
-// 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
-// }
-
 func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 	jsonData, _ := json.MarshalIndent(mail, "", "\t")
 	response, err := send_request(http.MethodPost, "http://mail-service/send", jsonData)
@@ -180,41 +200,6 @@ func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 
 	toolbox.WriteJson(w, http.StatusAccepted, jsonResponse, nil)
 }
-
-// func (app *Config) emitEvent(w http.ResponseWriter, l LogPayload) {
-// 	err := app.pushToQueue(l.Name, l.Data)
-// 	if err != nil {
-// 		log.Printf("Failed to push message [name,data]: [%s,%s]", l.Name, l.Data)
-// 		toolbox.ErrorJson(w, err, http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	var payload toolbox.JsonResponse
-// 	payload.Error = false
-// 	payload.Message = "Emitted message to RMQ"
-
-// 	toolbox.WriteJson(w, http.StatusAccepted, payload, nil)
-// }
-
-// func (app *Config) pushToQueue(name, msg string) error {
-// 	emitter, err := rmq.NewEmitter(app.rmqConn)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	payload := LogPayload{
-// 		Name: name,
-// 		Data: msg,
-// 	}
-
-// 	jsonData, _ := json.MarshalIndent(payload, "", "\t")
-// 	err = emitter.Push(string(jsonData), "log.INFO")
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
 
 type RPCPayload struct {
 	Name string
