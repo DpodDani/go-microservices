@@ -84,3 +84,14 @@ docker swarm join-token [manager|worker]
 ```shell
 docker service scale <SERVICE_NAME>=<REPLICA_NUM>
 ```
+
+### Updating service in docker swarm
+
+1. Create new tagged version of service
+2. Push newer versioned image to Docker Hub
+3. Scale the service to at least 2 instances (to prevent downtime when updating image)
+4. Update image in swarm to use newer version:
+   * Note: can also use to rollback to stable version (when bug found in new version)
+```shell
+docker service update --image <NEW_IMAGE> <SERVICE_NAME>
+```
