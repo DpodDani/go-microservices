@@ -36,6 +36,11 @@ docker-down:
 	docker-compose down
 	@echo "Done!"
 
+docker-stop:
+	@echo "Stopping docker compose..."
+	docker-compose stop
+	@echo "Done!"
+
 ## build_broker: builds the broker binary as a linux executable
 build-broker:
 	@echo "Building broker binary..."
@@ -116,3 +121,9 @@ upload-images:
 	docker push dnamufetha/auth-service:1.0.0
 	docker push dnamufetha/mail-service:1.0.0
 	docker push dnamufetha/listener-service:1.0.0
+
+deploy-swarm:
+	@echo "Deploying swarm..."
+	# docker stack --> manage Swarm stacks
+	docker stack deploy -c swarm.yml myapp
+	@echo "Deployed!"

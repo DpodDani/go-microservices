@@ -64,3 +64,17 @@ protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=p
 ```
 
 > Alternatively, run `make compile-proto-files` in project root
+
+## Docker swarm
+
+### For new projects, you have to initialise Docker swarm like so:
+
+```shell
+docker swarm init
+```
+
+### View token to have manager/worker node join swarm:
+
+```shell
+docker swarm join-token [manager|worker]
+```

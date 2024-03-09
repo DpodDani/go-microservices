@@ -1,0 +1,90 @@
+version: '3'
+
+services:
+  broker-service:
+    image: dnamufetha/broker-service:1.0.0
+    ports:
+      - "8080:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  listener-service:
+    image: dnamufetha/listener-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  auth-service:
+    image: dnamufetha/auth-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+
+  logger-serivce:
+    image: dnamufetha/logger-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  mail-service:
+    image: dnamufetha/mail-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      MAIL_PORT: 1025
+      MAIL_DOMAIN: localhost
+      MAIL_HOST: mailhog
+      MAIL_USENAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_ENCRYPTION: none
+      MAIL_FROM_NAME: "John Smith"
+      MAIL_FROM_ADDRESS: "john.smith@example.com"
+
+  rabbitmq:
+    image: "rabbitmq:3.12.12-alpine"
+    deploy:
+      # "global" means we only want one instance of this service running
+      mode: global
+
+  mailhog:
+    image: "mailhog/mailhog:latest"
+    ports:
+      # we want to connect to service running in container, in order to check emails ourselves
+      - "8025:8025"
+    deploy:
+      mode: global
+
+  mongo:
+    image: "mongo:4.2.16-bionic"
+    ports:
+      # similarly, we want to connect to DB running in container, in order to check data
+      - "27017:27017"
+    deploy:
+      mode: global
+    environment:
+      MONGO_INITDB_DATABASE: logs
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      # we want the data to live outside of the container so that data persists between restarts
+      - ./db-data/mongo/:/data/db/
+  
+  postgres:
+    image: "postgres:14.0"
+    ports:
+      - "5432:5432"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users
+    volumes:
+      # mapping ./db-data/postgres (on local computer) to /var/lib/postgresql/data (in Docker container)
+      - ./db-data/postgres/:/var/lib/postgresql/data/
