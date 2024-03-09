@@ -78,3 +78,9 @@ docker swarm init
 ```shell
 docker swarm join-token [manager|worker]
 ```
+
+### Scaling services up/down
+
+```shell
+docker service scale <SERVICE_NAME>=<REPLICA_NUM>
+```
