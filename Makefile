@@ -86,11 +86,33 @@ stop-frontend:
 
 ## Compile proto files
 
-services := logger broker
+root_dirs := logger broker
 compile_cmd := protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 compile-proto-files:
-	@echo "Compiling proto files for services: $(services)"
+	@echo "Compiling proto files for services: $(root_dirs)"
 	# For each "svc" in services, run the protoc compile command
-	$(foreach svc,$(services),$$(cd $(svc)/proto && $$($(compile_cmd))))
+	$(foreach svc,$(root_dirs),$$(cd $(svc)/proto && $$($(compile_cmd))))
 	@echo "Finished compiling proto files"
+
+
+## Upload images to Docker hub
+# Note: broker service is handled differently
+services := logger auth mail listener
+
+upload-images:
+	@echo "Uploading images to Docker Hub"
+	# build broker image
+	docker build -f broker/broker.dockerfile -t dnamufetha/broker-service:1.0.0 .
+	# build images for other services
+	$(foreach svc,$(services), $$(cd $(svc) && $$(docker build -f $(svc).dockerfile -t dnamufetha/$(svc)-service:1.0.0 .)))
+
+	# log into Docker Hub
+	docker login -u dnamufetha --password-stdin < .docker_pat.token
+
+	# upload images to Docker Hub
+	docker push dnamufetha/broker-service:1.0.0
+	docker push dnamufetha/logger-service:1.0.0
+	docker push dnamufetha/auth-service:1.0.0
+	docker push dnamufetha/mail-service:1.0.0
+	docker push dnamufetha/listener-service:1.0.0
