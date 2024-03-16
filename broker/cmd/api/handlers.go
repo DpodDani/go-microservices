@@ -77,6 +77,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		toolbox.ErrorJson(w, err, http.StatusBadRequest)
 	}
 
+	log.Printf("Handling submission for action: %s\n", requestPayload.Action)
+
 	switch requestPayload.Action {
 	case "authenticate":
 		app.authenticate(w, requestPayload.Auth)
@@ -101,6 +103,8 @@ func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
 		toolbox.ErrorJson(w, err, http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("Logging via gRPC: %+v\n", requestPayload)
 
 	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {

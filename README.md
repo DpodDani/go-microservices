@@ -95,3 +95,15 @@ docker service scale <SERVICE_NAME>=<REPLICA_NUM>
 ```shell
 docker service update --image <NEW_IMAGE> <SERVICE_NAME>
 ```
+
+### Remove services from swarm
+
+```shell
+docker stack rm <SWARM_NAME>
+```
+
+### Make node leave swarm
+
+```shell
+docker swarm leave
+```

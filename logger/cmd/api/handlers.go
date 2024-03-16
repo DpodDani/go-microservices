@@ -18,6 +18,8 @@ func (app *Config) WriteLog(w http.ResponseWriter, r *http.Request) {
 
 	_ = toolbox.ReadJson(w, r, &requestPayload)
 
+	log.Printf("Writing log... %+v\n", requestPayload)
+
 	entry := data.LogEntry{
 		Name: requestPayload.Name,
 		Data: requestPayload.Data,

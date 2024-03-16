@@ -24,6 +24,8 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Sending mail: %+v\n", requestPayload)
+
 	msg := Message{
 		From:    requestPayload.From,
 		To:      requestPayload.To,

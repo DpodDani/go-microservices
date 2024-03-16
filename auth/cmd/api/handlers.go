@@ -49,6 +49,8 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Authenticating %s\n", requestPayload.Email)
+
 	// validate user against database
 	user, err := app.Models.User.GetByEmail(requestPayload.Email)
 	if err != nil || user == nil {

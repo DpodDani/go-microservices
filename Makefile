@@ -107,23 +107,35 @@ services := logger auth mail listener
 
 upload-images:
 	@echo "Uploading images to Docker Hub"
+
+ifndef VERSION
+	$(error VERSION must be set --> make VERSION=<VERSION_NO> upload-images)
+endif
+
 	# build broker image
-	docker build -f broker/broker.dockerfile -t dnamufetha/broker-service:1.0.0 .
+	docker build -f broker/broker.dockerfile -t dnamufetha/broker-service:$(VERSION) .
 	# build images for other services
-	$(foreach svc,$(services), $$(cd $(svc) && $$(docker build -f $(svc).dockerfile -t dnamufetha/$(svc)-service:1.0.0 .)))
+	$(foreach svc,$(services), $$(cd $(svc) && $$(docker build -f $(svc).dockerfile -t dnamufetha/$(svc)-service:$(VERSION) .)))
 
 	# log into Docker Hub
 	docker login -u dnamufetha --password-stdin < .docker_pat.token
 
 	# upload images to Docker Hub
-	docker push dnamufetha/broker-service:1.0.0
-	docker push dnamufetha/logger-service:1.0.0
-	docker push dnamufetha/auth-service:1.0.0
-	docker push dnamufetha/mail-service:1.0.0
-	docker push dnamufetha/listener-service:1.0.0
+	docker push dnamufetha/broker-service:$(VERSION)
+	docker push dnamufetha/logger-service:$(VERSION)
+	docker push dnamufetha/auth-service:$(VERSION)
+	docker push dnamufetha/mail-service:$(VERSION)
+	docker push dnamufetha/listener-service:$(VERSION)
+
+APP_NAME=myapp
 
 deploy-swarm:
 	@echo "Deploying swarm..."
 	# docker stack --> manage Swarm stacks
-	docker stack deploy -c swarm.yml myapp
+	docker stack deploy -c swarm.yml $(APP_NAME)
 	@echo "Deployed!"
+
+stop-swarm:
+	@echo "Stopping swarm..."
+	docker stack rm $(APP_NAME)
+	@echo "Swarm started!"

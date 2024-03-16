@@ -4,6 +4,7 @@ services:
   broker-service:
     image: dnamufetha/broker-service:1.0.0
     ports:
+      # host port --> container port
       - "8080:80"
     deploy:
       mode: replicated
