@@ -2,22 +2,19 @@ version: '3'
 
 services:
   broker-service:
-    image: dnamufetha/broker-service:1.0.0
-    ports:
-      # host port --> container port
-      - "8080:80"
+    image: dnamufetha/broker-service:1.0.2
     deploy:
       mode: replicated
       replicas: 1
 
   listener-service:
-    image: dnamufetha/listener-service:1.0.0
+    image: dnamufetha/listener-service:1.0.1
     deploy:
       mode: replicated
       replicas: 1
 
   auth-service:
-    image: dnamufetha/auth-service:1.0.0
+    image: dnamufetha/auth-service:1.0.1
     deploy:
       mode: replicated
       replicas: 1
@@ -25,13 +22,13 @@ services:
       DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
 
   logger-service:
-    image: dnamufetha/logger-service:1.0.0
+    image: dnamufetha/logger-service:1.0.1
     deploy:
       mode: replicated
       replicas: 1
 
   mail-service:
-    image: dnamufetha/mail-service:1.0.0
+    image: dnamufetha/mail-service:1.0.1
     deploy:
       mode: replicated
       replicas: 1
