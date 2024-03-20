@@ -114,6 +114,7 @@ endif
 
 	# build broker image
 	docker build -f broker/broker.dockerfile -t dnamufetha/broker-service:$(VERSION) .
+	docker build -f front-end/frontend.dockerfile -t dnamufetha/frontend-service:$(VERSION) .
 	# build images for other services
 	$(foreach svc,$(services), $$(cd $(svc) && $$(docker build -f $(svc).dockerfile -t dnamufetha/$(svc)-service:$(VERSION) .)))
 
@@ -126,6 +127,7 @@ endif
 	docker push dnamufetha/auth-service:$(VERSION)
 	docker push dnamufetha/mail-service:$(VERSION)
 	docker push dnamufetha/listener-service:$(VERSION)
+	docker push dnamufetha/frontend-service:$(VERSION)
 
 APP_NAME=myapp
 
@@ -138,4 +140,4 @@ deploy-swarm:
 stop-swarm:
 	@echo "Stopping swarm..."
 	docker stack rm $(APP_NAME)
-	@echo "Swarm started!"
+	@echo "Swarm stopped!"

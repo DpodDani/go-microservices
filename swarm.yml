@@ -1,6 +1,11 @@
 version: '3'
 
 services:
+  frontend-service:
+    image: dnamufetha/frontend-service:1.0.0
+    deploy:
+      mode: global
+
   broker-service:
     image: dnamufetha/broker-service:1.0.2
     deploy:
