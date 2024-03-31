@@ -1,10 +1,25 @@
 version: '3'
 
 services:
-  frontend-service:
-    image: dnamufetha/frontend-service:1.0.0
+  caddy:
+    image: dnamufetha/micro-caddy:1.0.0
     deploy:
-      mode: global
+      mode: replicated
+      replicas: 1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  frontend-service:
+    image: dnamufetha/frontend-service:1.0.2
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      BROKER_URL: http://backend
 
   broker-service:
     image: dnamufetha/broker-service:1.0.2
@@ -80,7 +95,6 @@ services:
     image: "postgres:14.0"
     ports:
       - "5432:5432"
-    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -91,3 +105,8 @@ services:
     volumes:
       # mapping ./db-data/postgres (on local computer) to /var/lib/postgresql/data (in Docker container)
       - ./db-data/postgres/:/var/lib/postgresql/data/
+
+volumes:
+  caddy_data:
+    external: true
+  caddy_config:

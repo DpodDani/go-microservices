@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 const webPort = "8081"
@@ -15,6 +16,7 @@ func main() {
 		render(w, "test.page.gohtml")
 	})
 
+	log.Printf("Listening to broker URL: %s\n", os.Getenv("BROKER_URL"))
 	fmt.Printf("Starting front end service on port %s\n", webPort)
 	err := http.ListenAndServe(fmt.Sprintf(":%s", webPort), nil)
 	if err != nil {
@@ -44,7 +46,13 @@ func render(w http.ResponseWriter, target string) {
 		return
 	}
 
-	if err := tmpl.Execute(w, nil); err != nil {
+	var data struct {
+		BrokerURL string
+	}
+
+	data.BrokerURL = os.Getenv("BROKER_URL")
+
+	if err := tmpl.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

@@ -1,0 +1,40 @@
+{
+    email   d.namu.fetha@gmail.com
+}
+
+# applies to any host that refers to static
+# caches any static assets for max-age
+(static) {
+	@static {
+		file
+		path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.json
+	}
+	header @static Cache-Control max-age=5184000
+}
+
+(security) {
+	header {
+		# enable HSTS
+		# don't let any visit unencrypted version of our site - redirect them if they do
+		Strict-Transport-Security max-age=31536000;
+		# disable clients from sniffing the media type
+		X-Content-Type-Options nosniff
+		# keep referrer data off of HTTP connections
+		Referrer-Policy no-referrer-when-downgrade
+	}
+}
+
+# "localhost" is the name of the server
+localhost:80 {
+	# compress incoming requests
+	encode zstd gzip
+	# import static code block from above
+	import static
+
+	# frontend-service is the name of our service in the Swarm file
+	reverse_proxy  http://frontend-service:8081
+}
+
+backend:80 {
+	reverse_proxy http://broker-service:8080
+}
