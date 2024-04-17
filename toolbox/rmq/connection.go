@@ -30,7 +30,7 @@ func Connect() (*amqp.Connection, error) {
 
 		if retries > maxRetries {
 			log.Println("Reached max retry limit. Exiting...")
-			break
+			return nil, err
 		}
 
 		backOffTime := time.Duration(math.Pow(2, float64(retries))) * baseDelay
