@@ -123,3 +123,29 @@ docker stack rm <SWARM_NAME>
 ```shell
 docker swarm leave
 ```
+
+## Kubernetes
+
+> Install Minikube: https://minikube.sigs.k8s.io/docs/start/
+
+### Accessing dashboard
+
+1. Start Kubernetes cluster
+
+> Use the `--nodes=2` to create 2 nodes in the cluster
+
+```shell
+minikube start
+```
+
+2. View Kubernetes dashboard
+
+```shell
+minikube dashboard
+```
+
+3. Deployment changes to Kubernetes cluster
+
+```shell
+kubectl apply -f <KUBERNETES_YAML_FILE>
+```
