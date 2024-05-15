@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mailhog
+  name: front-end
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mailhog
+      app: front-end
   template:
     metadata:
       labels:
-        app: mailhog
+        app: front-end
     spec:
       containers:
-      - name: mailhog
-        image: "mailhog/mailhog:latest"
+      - name: front-end
+        image: "dnamufetha/frontend-service:1.0.2"
         resources:
           requests:
             memory: "64Mi"
@@ -22,25 +22,23 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
+        env:
+          - name: BROKER_URL
+            value: "http://broker-service.info"
         ports:
-          - containerPort: 1025
-          - containerPort: 8025
+          - containerPort: 8081
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: mailhog
+  name: front-end
 spec:
   selector:
-    app: mailhog
+    app: front-end
   ports:
     - protocol: TCP
-      name: smtp-port
-      port: 1025
-      targetPort: 1025
-    - protocol: TCP
-      name: web-port
-      port: 8025
-      targetPort: 8025
+      name: main-port
+      port: 8081
+      targetPort: 8081
