@@ -1,108 +1,59 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"github.com/DpodDani/auth/cmd/data"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/stretchr/testify/require"
 )
 
-const TIMEOUT = 5
+type RoundTripFunc func(req *http.Request) *http.Response
 
-var DB = connectToDB("host=localhost port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5")
-
-func createServer() *httptest.Server {
-	config := Config{
-		DB:     DB,
-		Models: data.New(DB),
-	}
-	server := httptest.NewServer(config.routes())
-	return server
+func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
 }
 
-func mustCreateTestUser(t *testing.T) *data.User {
-	config := Config{
-		DB:     DB,
-		Models: data.New(DB),
+func NewTestClient(fn RoundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: fn,
 	}
+}
 
-	now := time.Now()
-	expectedPassword := "password"
+func Test_Authenticate(t *testing.T) {
+	jsonReturn := `
+	{
+		"error": false,
+		"message": "some message"
+	}
+	`
 
-	userID, err := config.Models.User.Insert(data.User{
-		Email:     fmt.Sprintf("test%d@email.com", now.Unix()),
-		FirstName: "test",
-		LastName:  "user",
-		Password:  expectedPassword,
-		Active:    1,
-		CreatedAt: now,
-		UpdatedAt: now,
+	client := NewTestClient(func(req *http.Request) *http.Response {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString(jsonReturn)),
+			Header:     make(http.Header),
+		}
 	})
-	if err != nil {
-		require.NoError(t, err, "Failed to create test user")
+
+	testApp.Client = client
+
+	postBody := map[string]interface{}{
+		"email":    "me@here.com",
+		"password": "verysecret",
 	}
 
-	user, err := config.Models.User.GetOne(userID)
-	if err != nil {
-		require.NoError(t, err, "Failed to fetch test user")
+	body, _ := json.Marshal(postBody)
+
+	req, _ := http.NewRequest("POST", "/authenticate", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(testApp.Authenticate)
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Errorf("expected status accepted but got %d", rr.Code)
 	}
-
-	user.Password = expectedPassword
-
-	return user
-}
-
-func TestAuthenticate_when_user_does_not_exist(t *testing.T) {
-	server := createServer()
-	defer server.Close()
-
-	e := httpexpect.Default(t, server.URL)
-
-	e.POST("/authenticate").
-		WithFormField("email", "fake_user@email.com").
-		WithFormField("password", "fake_password").
-		Expect().
-		Status(http.StatusBadRequest)
-}
-
-func TestAuthenticate_when_bad_payload(t *testing.T) {
-	server := createServer()
-	defer server.Close()
-
-	e := httpexpect.Default(t, server.URL)
-
-	e.POST("/authenticate").
-		WithJSON(map[string]interface{}{
-			"bad_field": "bad_value",
-		}).
-		Expect().
-		Status(http.StatusBadRequest)
-}
-
-func TestAuthenticate_password_matches(t *testing.T) {
-	server := createServer()
-	defer server.Close()
-
-	user := mustCreateTestUser(t)
-	e := httpexpect.Default(t, server.URL)
-
-	e.POST("/authenticate").
-		WithJSON(map[string]interface{}{
-			"email":    user.Email,
-			"password": user.Password,
-		}).
-		Expect().
-		Status(http.StatusAccepted).
-		JSON().
-		Object().
-		IsEqual(map[string]interface{}{
-			"error":   false,
-			"message": fmt.Sprintf("Logged in user %s! 🎉", user.Email),
-			"data":    user,
-		})
 }

@@ -11,7 +11,7 @@ import (
 	toolbox "github.com/DpodDani/go-microservices-toolbox/json"
 )
 
-func logRequest(name, data string) error {
+func logRequest(app *Config, name, data string) error {
 	var entry struct {
 		Name string `json:"name"`
 		Data string `json:"data"`
@@ -27,8 +27,7 @@ func logRequest(name, data string) error {
 		return err
 	}
 
-	client := http.Client{}
-	_, err = client.Do(request)
+	_, err = app.Client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -52,14 +51,14 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Authenticating %s\n", requestPayload.Email)
 
 	// validate user against database
-	user, err := app.Models.User.GetByEmail(requestPayload.Email)
+	user, err := app.Repo.GetByEmail(requestPayload.Email)
 	if err != nil || user == nil {
 		log.Printf("❌ - Could not find email: %s\n", requestPayload.Email)
 		toolbox.ErrorJson(w, errors.New("invalid credentials"), http.StatusBadRequest)
 		return
 	}
 
-	matches, err := user.PasswordMatches(requestPayload.Password)
+	matches, err := app.Repo.PasswordMatches(requestPayload.Password, *user)
 	if err != nil || !matches {
 		log.Printf("❌ - Invalid password for email: %s\n", requestPayload.Email)
 		toolbox.ErrorJson(w, errors.New("invalid credentials"), http.StatusUnauthorized)
@@ -69,9 +68,11 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 	// log authentication
 	// note: for some reason, in the tutorial we return from this function if
 	// logRequest() call returns an error... Decided not worth doing that
-	err = logRequest("auth", fmt.Sprintf("%s logged in", requestPayload.Email))
+	err = logRequest(app, "auth", fmt.Sprintf("%s logged in", requestPayload.Email))
 	if err != nil {
 		log.Printf("😔 - Failed to log auth for email: %s: %s", requestPayload.Email, err)
+		toolbox.ErrorJson(w, errors.New("failed to log"), http.StatusInternalServerError)
+		return
 	}
 
 	response := toolbox.JsonResponse{

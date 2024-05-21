@@ -18,8 +18,8 @@ import (
 const webPort = "80"
 
 type Config struct {
-	DB     *sql.DB
-	Models data.Models
+	Repo   data.Repository
+	Client *http.Client
 }
 
 func main() {
@@ -35,8 +35,7 @@ func main() {
 	}
 
 	app := Config{
-		DB:     db,
-		Models: data.New(db),
+		Client: &http.Client{},
 	}
 
 	srv := &http.Server{
@@ -86,4 +85,9 @@ func connectToDB(dsn string) *sql.DB {
 		log.Printf("Backing off for %d seconds...\n", backOffTime)
 		time.Sleep(backOffTime)
 	}
+}
+
+func (app *Config) setupRepo(conn *sql.DB) {
+	db := data.NewPostgresRepository(conn)
+	app.Repo = db
 }
